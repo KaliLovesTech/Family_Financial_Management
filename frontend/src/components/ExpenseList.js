@@ -1,13 +1,25 @@
 import React, { useEffect, useState } from 'react';
+import { parse } from 'json2csv';
+import { saveAs } from 'file-saver';
 import api from '../api';
 
 const ExpenseList = () => {
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [sortOption, setSortOption] = useState('');
-  const [minAmount, setMinAmount] = useState('');
-  const [maxAmount, setMaxAmount] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [category, setCategory] = useState('');
+
+  const exportToCSV = () => {
+    try {
+      const csv = parse(expenses); // Convert JSON to CSV
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      saveAs(blob, 'expenses.csv');
+    } catch (error) {
+      console.error("Error exporting CSV:", error);
+    }
+  };
 
   useEffect(() => {
     const fetchExpenses = async () => {
@@ -24,32 +36,19 @@ const ExpenseList = () => {
     fetchExpenses();
   }, []);
 
-  const handleDelete = async (expenseId) => {
-    try {
-      await api.delete(`/financials/expenses/${expenseId}/`);
-      setExpenses(expenses.filter((expense) => expense.id !== expenseId)); // Update state by removing deleted item
-    } catch (error) {
-      console.error("Error deleting expense:", error);
-      setError("Failed to delete expense");
+  const handleFilter = () => {
+    let filteredExpenses = [...expenses];
+    if (startDate) {
+      filteredExpenses = filteredExpenses.filter((expense) => new Date(expense.date) >= new Date(startDate));
     }
+    if (endDate) {
+      filteredExpenses = filteredExpenses.filter((expense) => new Date(expense.date) <= new Date(endDate));
+    }
+    if (category) {
+      filteredExpenses = filteredExpenses.filter((expense) => expense.category === category);
+    }
+    setExpenses(filteredExpenses);
   };
-
-  const handleSort = (e) => {
-    const option = e.target.value;
-    setSortOption(option);
-
-    const sortedExpenses = [...expenses].sort((a, b) => {
-      if (option === 'amount') return b.amount - a.amount;
-      if (option === 'date') return new Date(b.date) - new Date(a.date);
-      return 0;
-    });
-    setExpenses(sortedExpenses);
-  };
-
-  const filteredExpenses = expenses.filter(expense => {
-    const amount = parseFloat(expense.amount);
-    return (!minAmount || amount >= minAmount) && (!maxAmount || amount <= maxAmount);
-  });
 
   if (loading) return <p>Loading expenses...</p>;
   if (error) return <p>{error}</p>;
@@ -59,27 +58,30 @@ const ExpenseList = () => {
       <h2>Expenses</h2>
       <div>
         <label>
-          Sort by:
-          <select value={sortOption} onChange={handleSort}>
-            <option value="">Select</option>
-            <option value="amount">Amount</option>
-            <option value="date">Date</option>
+          Start Date:
+          <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+        </label>
+        <label>
+          End Date:
+          <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+        </label>
+        <label>
+          Category:
+          <select value={category} onChange={(e) => setCategory(e.target.value)}>
+            <option value="">All</option>
+            <option value="Food">Food</option>
+            <option value="Transport">Transport</option>
+            <option value="Entertainment">Entertainment</option>
+            <option value="Utilities">Utilities</option>
           </select>
         </label>
-        <label>
-          Min Amount:
-          <input type="number" value={minAmount} onChange={(e) => setMinAmount(e.target.value)} />
-        </label>
-        <label>
-          Max Amount:
-          <input type="number" value={maxAmount} onChange={(e) => setMaxAmount(e.target.value)} />
-        </label>
+        <button onClick={handleFilter}>Filter</button>
+        <button onClick={exportToCSV}>Export to CSV</button>
       </div>
       <ul>
-        {filteredExpenses.map((expense) => (
+        {expenses.map((expense) => (
           <li key={expense.id}>
             {expense.description}: ${expense.amount} on {expense.date}
-            <button onClick={() => handleDelete(expense.id)}>Delete</button>
           </li>
         ))}
       </ul>

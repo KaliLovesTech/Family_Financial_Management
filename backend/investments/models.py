@@ -1,4 +1,6 @@
+# backend/investments/models.py
 from django.db import models
+from budgeting.models import Budget  # Import Budget model
 
 class Investment(models.Model):
     TYPE_CHOICES = [
@@ -13,7 +15,8 @@ class Investment(models.Model):
     purchase_date = models.DateField()
     purchase_price = models.DecimalField(max_digits=10, decimal_places=2)
     current_value = models.DecimalField(max_digits=10, decimal_places=2)
-
+    budget = models.ForeignKey(Budget, on_delete=models.SET_NULL, related_name='investments', null=True, blank=True)
+    
     def __str__(self):
         return f"{self.name} ({self.investment_type})"
 

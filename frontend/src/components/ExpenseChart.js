@@ -1,13 +1,22 @@
-// frontend/src/components/ExpenseChart.js
 import React, { useEffect, useState } from 'react';
 import { Bar } from 'react-chartjs-2';
 import api from '../api';
 import { Chart as ChartJS, BarElement, CategoryScale, LinearScale, Title } from 'chart.js';
 
+// Register necessary Chart.js components
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title);
 
 const ExpenseChart = () => {
-  const [chartData, setChartData] = useState({});
+  const [chartData, setChartData] = useState({
+    labels: [],
+    datasets: [
+      {
+        label: 'Monthly Expenses',
+        data: [],
+        backgroundColor: 'rgba(75, 192, 192, 0.6)',
+      },
+    ],
+  });
 
   useEffect(() => {
     const fetchExpenses = async () => {
@@ -42,7 +51,11 @@ const ExpenseChart = () => {
   return (
     <div>
       <h3>Monthly Expenses</h3>
-      <Bar data={chartData} options={{ responsive: true, maintainAspectRatio: false }} />
+      {chartData.labels.length > 0 ? (
+        <Bar data={chartData} options={{ responsive: true, maintainAspectRatio: false }} />
+      ) : (
+        <p>Loading chart data...</p>
+      )}
     </div>
   );
 };
